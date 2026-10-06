@@ -1,0 +1,39 @@
+{
+    "name": "server",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "dev": "tsx watch src/index.ts",
+        "build": "tsc",
+        "start": "node dist/index.js",
+        "db:generate": "drizzle-kit generate",
+        "db:migrate": "drizzle-kit migrate",
+        "db:push": "drizzle-kit push",
+        "db:studio": "drizzle-kit studio",
+        "format": "prettier --write ."
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "type": "commonjs",
+    "dependencies": {
+        "cors": "^2.8.6",
+        "dotenv": "^18.0.5",
+        "drizzle-orm": "^0.45.3",
+        "express": "^5.2.1",
+        "firebase-admin": "^14.5.0",
+        "ioredis": "^6.0.0",
+        "pg": "^8.23.1"
+    },
+    "devDependencies": {
+        "@types/cors": "^2.8.19",
+        "@types/express": "^5.0.6",
+        "@types/node": "^26.6.4",
+        "drizzle-kit": "^0.31.11",
+        "prettier": "^3.9.9",
+        "tsx": "^4.23.15",
+        "typescript": "^7.0.2"
+    }
+}
