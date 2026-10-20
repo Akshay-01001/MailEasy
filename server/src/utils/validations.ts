@@ -1,5 +1,14 @@
 import Joi from 'joi';
 
+export const isValidTimezone = (tz: string): boolean => {
+    try {
+        Intl.DateTimeFormat(undefined, { timeZone: tz });
+        return true;
+    } catch {
+        return false;
+    }
+};
+
 export const registerSchema = Joi.object({
     name: Joi.string().trim().min(2).max(100).required().messages({
         'string.empty': 'Name is required',
@@ -19,8 +28,14 @@ export const registerSchema = Joi.object({
         'string.max': 'Password cannot exceed 255 characters',
         'any.required': 'Password is required',
     }),
-    gender: Joi.string().trim().max(30).optional().allow(null, ''),
-    age: Joi.number().integer().min(1).max(120).optional().allow(null),
+    timezone: Joi.any()
+        .optional()
+        .default('UTC')
+        .custom((value) => {
+            if (typeof value !== 'string' || !value.trim()) return 'UTC';
+            const trimmed = value.trim();
+            return isValidTimezone(trimmed) ? trimmed : 'UTC';
+        }, 'timezone validation'),
 });
 
 export const loginSchema = Joi.object({

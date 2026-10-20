@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { registerSchema, loginSchema } from '../../utils/validations.js';
+import {
+    registerSchema,
+    loginSchema,
+    isValidTimezone,
+} from '../../utils/validations.js';
 
 describe('registerSchema', () => {
     const validPayload = {
@@ -15,11 +19,10 @@ describe('registerSchema', () => {
     });
 
     it('should pass with all optional fields', () => {
-        const payload = { ...validPayload, gender: 'male', age: 25 };
+        const payload = { ...validPayload, timezone: 'Asia/Kolkata' };
         const { error, value } = registerSchema.validate(payload);
         expect(error).toBeUndefined();
-        expect(value.gender).toBe('male');
-        expect(value.age).toBe(25);
+        expect(value.timezone).toBe('Asia/Kolkata');
     });
 
     it('should trim name and email', () => {
@@ -100,38 +103,48 @@ describe('registerSchema', () => {
         expect(error!.details[0].message).toContain('at least 6 characters');
     });
 
-    // --- age validations ---
+    // --- timezone validations ---
 
-    it('should fail when age is less than 1', () => {
-        const { error } = registerSchema.validate({
-            ...validPayload,
-            age: 0,
-        });
-        expect(error).toBeDefined();
+    it('should default timezone to UTC when not provided', () => {
+        const { error, value } = registerSchema.validate(validPayload);
+        expect(error).toBeUndefined();
+        expect(value.timezone).toBe('UTC');
     });
 
-    it('should fail when age exceeds 120', () => {
-        const { error } = registerSchema.validate({
+    it('should accept a valid IANA timezone', () => {
+        const { error, value } = registerSchema.validate({
             ...validPayload,
-            age: 121,
-        });
-        expect(error).toBeDefined();
-    });
-
-    it('should allow null or empty gender', () => {
-        const r1 = registerSchema.validate({ ...validPayload, gender: null });
-        expect(r1.error).toBeUndefined();
-
-        const r2 = registerSchema.validate({ ...validPayload, gender: '' });
-        expect(r2.error).toBeUndefined();
-    });
-
-    it('should allow null age', () => {
-        const { error } = registerSchema.validate({
-            ...validPayload,
-            age: null,
+            timezone: 'Asia/Kolkata',
         });
         expect(error).toBeUndefined();
+        expect(value.timezone).toBe('Asia/Kolkata');
+    });
+
+    it('should fall back to UTC for an invalid timezone string', () => {
+        const { error, value } = registerSchema.validate({
+            ...validPayload,
+            timezone: 'Not/A_Real_Zone',
+        });
+        expect(error).toBeUndefined();
+        expect(value.timezone).toBe('UTC');
+    });
+
+    it('should fall back to UTC when timezone is empty string', () => {
+        const { error, value } = registerSchema.validate({
+            ...validPayload,
+            timezone: '',
+        });
+        expect(error).toBeUndefined();
+        expect(value.timezone).toBe('UTC');
+    });
+
+    it('should fall back to UTC when timezone is null', () => {
+        const { error, value } = registerSchema.validate({
+            ...validPayload,
+            timezone: null,
+        });
+        expect(error).toBeUndefined();
+        expect(value.timezone).toBe('UTC');
     });
 });
 
@@ -186,5 +199,25 @@ describe('loginSchema', () => {
         });
         expect(error).toBeDefined();
         expect(error!.details[0].message).toContain('Password is required');
+    });
+});
+
+
+describe('isValidTimezone', () => {
+    it('should return true for valid IANA timezones', () => {
+        expect(isValidTimezone('UTC')).toBe(true);
+        expect(isValidTimezone('Asia/Kolkata')).toBe(true);
+        expect(isValidTimezone('America/New_York')).toBe(true);
+        expect(isValidTimezone('Europe/London')).toBe(true);
+    });
+
+    it('should return false for invalid timezone strings', () => {
+        expect(isValidTimezone('Not/Real')).toBe(false);
+        expect(isValidTimezone('IST')).toBe(false);
+    });
+
+    it('should accept case-insensitive UTC variants', () => {
+        expect(isValidTimezone('utc')).toBe(true);
+        expect(isValidTimezone('UTC')).toBe(true);
     });
 });

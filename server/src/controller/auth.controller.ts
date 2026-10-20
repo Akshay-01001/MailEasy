@@ -44,10 +44,7 @@ export const register = async (req: Request, res: Response) => {
                 email: value.email,
                 password: passwordHash,
                 authProvider: 'credentials',
-                ...(value.gender ? { gender: value.gender } : {}),
-                ...(value.age !== undefined && value.age !== null
-                    ? { age: value.age }
-                    : {}),
+                timezone: value.timezone,
             })
             .returning({
                 id: users.id,
@@ -55,8 +52,7 @@ export const register = async (req: Request, res: Response) => {
                 email: users.email,
                 authProvider: users.authProvider,
                 isVerified: users.isVerified,
-                gender: users.gender,
-                age: users.age,
+                timezone: users.timezone,
                 createdAt: users.createdAt,
                 updatedAt: users.updatedAt,
             });

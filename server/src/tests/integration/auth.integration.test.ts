@@ -8,8 +8,7 @@ const TEST_USER = {
     name: 'Test User',
     email: `testuser_${Date.now()}@example.com`,
     password: 'securePass123',
-    gender: 'male',
-    age: 25,
+    timezone: 'Asia/Kolkata',
 };
 
 describe('Auth API - Integration Tests', () => {
@@ -50,8 +49,7 @@ describe('Auth API - Integration Tests', () => {
                 email: TEST_USER.email,
                 authProvider: 'credentials',
                 isVerified: false,
-                gender: TEST_USER.gender,
-                age: TEST_USER.age,
+                timezone: TEST_USER.timezone,
             });
             // password must NOT be returned
             expect(res.body.data.password).toBeUndefined();
@@ -69,8 +67,21 @@ describe('Auth API - Integration Tests', () => {
                 });
 
             expect(res.status).toBe(201);
-            expect(res.body.data.gender).toBeNull();
-            expect(res.body.data.age).toBeNull();
+            expect(res.body.data.timezone).toBe('UTC');
+        });
+
+        it('should fall back to UTC for an invalid timezone', async () => {
+            const res = await request(app)
+                .post('/api/auth/register')
+                .send({
+                    name: TEST_USER.name,
+                    email: TEST_USER.email,
+                    password: TEST_USER.password,
+                    timezone: 'Invalid/Zone',
+                });
+
+            expect(res.status).toBe(201);
+            expect(res.body.data.timezone).toBe('UTC');
         });
 
         it('should return 409 when email already exists', async () => {
@@ -125,13 +136,17 @@ describe('Auth API - Integration Tests', () => {
             expect(res.body.success).toBe(false);
         });
 
-        it('should return 400 when age is out of range', async () => {
+        it('should default timezone to UTC when not provided', async () => {
             const res = await request(app)
                 .post('/api/auth/register')
-                .send({ ...TEST_USER, age: 200 });
+                .send({
+                    name: TEST_USER.name,
+                    email: TEST_USER.email,
+                    password: TEST_USER.password,
+                });
 
-            expect(res.status).toBe(400);
-            expect(res.body.success).toBe(false);
+            expect(res.status).toBe(201);
+            expect(res.body.data.timezone).toBe('UTC');
         });
     });
 

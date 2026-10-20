@@ -4,7 +4,6 @@ import {
     uuid,
     varchar,
     boolean,
-    integer,
     timestamp,
     uniqueIndex,
     check,
@@ -26,8 +25,7 @@ export const users = pgTable(
         authProvider: authProviderEnum('auth_provider').notNull(),
         providerId: varchar('provider_id', { length: 255 }),
         isVerified: boolean('is_verified').notNull().default(false),
-        gender: varchar('gender', { length: 30 }),
-        age: integer('age'),
+        timezone: varchar('timezone', { length: 100 }).notNull().default('UTC'),
         createdAt: timestamp('created_at', {
             withTimezone: true,
         })
@@ -56,10 +54,6 @@ export const users = pgTable(
         AND ${table.providerId} IS NOT NULL
         AND ${table.isVerified} = true
       )`,
-        ),
-        check(
-            'users_age_check',
-            sql`${table.age} IS NULL OR ${table.age} BETWEEN 1 AND 120`,
         ),
     ],
 );
