@@ -1,6 +1,6 @@
 import { afterAll, describe, expect, it } from 'vitest';
 import { sql } from 'drizzle-orm';
-import { db, pool } from '../db/db.js';
+import { db, pool } from '../../db/db.js';
 
 describe('PostgreSQL connection', () => {
     afterAll(async () => {
