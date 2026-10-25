@@ -1,13 +1,26 @@
 // use prisma-8
 
 model User {
-  id        String   @id @onCreate(uuid())
-  email     String   @unique
-  username  String   @unique
-  name      String?
-  password  String
-  createdAt TimestamptzString @default(now())
-  updatedAt temporal.updatedAtString()
+  id            Uuid                  @id(map: "users_pkey") @default(sql`gen_random_uuid()`)
+  name          VarChar(100)
+  email         VarChar(255)          @unique(map: "users_email_unique")
+  password      VarChar(255)?
+  authProvider  pg.enum(AuthProvider) @map("auth_provider")
+  providerId    VarChar(255)?         @map("provider_id")
+  isVerified    Boolean               @default(false) @map("is_verified")
+  refreshTokens RefreshToken[]
+  createdAt     TimestamptzString     @default(now()) @map("created_at")
+  updatedAt     TimestamptzString     @default(now()) @map("updated_at")
+  timezone      VarChar(100)          @default("UTC")
 
+  @@index([providerId], map: "users_google_provider_id_unique", where: sql`(auth_provider = 'google'::auth_provider)`, unique: true)
+  @@check(expression: sql`(((auth_provider = 'credentials'::auth_provider) AND (password IS NOT NULL) AND (provider_id IS NULL)) OR ((auth_provider = 'google'::auth_provider) AND (password IS NULL) AND (provider_id IS NOT NULL) AND (is_verified = true)))`, map: "users_auth_provider_fields_check")
   @@map("users")
+}
+
+native_enum AuthProvider {
+  credentials = "credentials"
+  google      = "google"
+
+  @@map("auth_provider")
 }
