@@ -54,3 +54,16 @@ test-results/
 # Local databases and backups
 *.dump
 *.sql.gz
+
+# Prisma agent skills
+.agents/
+.claude/
+.cursor/
+.devin/
+**/.agents/
+**/.claude/
+**/.cursor/
+**/.devin/
+prisma-*.md
+**/prisma-*.md
+
