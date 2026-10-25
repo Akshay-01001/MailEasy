@@ -19,7 +19,6 @@
     "strict": true,
     "strictPropertyInitialization": false,
     "types": [
-      "vitest/globals",
       "node"
     ],
     "resolveJsonModule": true
