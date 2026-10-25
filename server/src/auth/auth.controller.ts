@@ -10,27 +10,32 @@ import {
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
-import { AuthService } from './auth.service.js';
+import { CredentialService } from './credential.service.js';
 import { RegisterUserDto } from './dto/register-user-dto.js';
 import { LoginUserDto } from './dto/login-user-dto.js';
 import { AuthGuard } from './guards/auth.guard.js';
 import { CurrentUser } from './decorators/current-user.decorator.js';
 import type { Request, Response } from 'express';
+import { GoogleAuthService } from './google-auth.service.js';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly credentialService: CredentialService,
+    private readonly googleAuthService: GoogleAuthService,
+  ) {}
 
   @Post('register')
   async register(
     @Body() registerUserDto: RegisterUserDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const user = await this.authService.registerUser(registerUserDto);
-    const { accessToken, refreshToken } = await this.authService.generateTokens({
-      email: user.email,
-      id: user.id,
-    });
+    const user = await this.credentialService.registerUser(registerUserDto);
+    const { accessToken, refreshToken } =
+      await this.credentialService.generateTokens({
+        email: user.email,
+        id: user.id,
+      });
 
     this.setAuthCookies(res, accessToken, refreshToken);
 
@@ -46,11 +51,12 @@ export class AuthController {
     @Body() loginUserDto: LoginUserDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const user = await this.authService.loginUser(loginUserDto);
-    const { accessToken, refreshToken } = await this.authService.generateTokens({
-      email: user.email,
-      id: user.id,
-    });
+    const user = await this.credentialService.credentialLogin(loginUserDto);
+    const { accessToken, refreshToken } =
+      await this.credentialService.generateTokens({
+        email: user.email,
+        id: user.id,
+      });
 
     this.setAuthCookies(res, accessToken, refreshToken);
 
@@ -73,7 +79,7 @@ export class AuthController {
     }
 
     const { accessToken, refreshToken } =
-      await this.authService.refreshToken(token);
+      await this.credentialService.refreshToken(token);
     this.setAuthCookies(res, accessToken, refreshToken);
 
     return {
@@ -83,13 +89,10 @@ export class AuthController {
 
   @Post('logout')
   @HttpCode(HttpStatus.OK)
-  async logout(
-    @Req() req: Request,
-    @Res({ passthrough: true }) res: Response,
-  ) {
+  async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const token = req.cookies?.refresh_token;
     if (token) {
-      await this.authService.revokeToken(token);
+      await this.credentialService.revokeToken(token);
     }
     this.clearAuthCookies(res);
 
@@ -105,7 +108,7 @@ export class AuthController {
     @CurrentUser('sub') userId: string,
     @Res({ passthrough: true }) res: Response,
   ) {
-    await this.authService.revokeAllUserTokens(userId);
+    await this.credentialService.revokeAllUserTokens(userId);
     this.clearAuthCookies(res);
 
     return {
@@ -116,7 +119,7 @@ export class AuthController {
   @Get('me')
   @UseGuards(AuthGuard)
   async getProfile(@CurrentUser('sub') userId: string) {
-    return this.authService.getProfile(userId);
+    return this.credentialService.getProfile(userId);
   }
 
   private setAuthCookies(

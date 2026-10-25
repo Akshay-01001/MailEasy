@@ -12,7 +12,7 @@ import { LoginUserDto } from './dto/login-user-dto.js';
 import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
-export class AuthService {
+export class CredentialService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
@@ -52,7 +52,7 @@ export class AuthService {
     return userWithoutPassword;
   }
 
-  async loginUser(data: LoginUserDto) {
+  async credentialLogin(data: LoginUserDto) {
     const userDetails = await this.prisma.db.orm.public.User.where({
       email: data.email,
     }).first();
@@ -225,3 +225,4 @@ export class AuthService {
     });
   }
 }
+

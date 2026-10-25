@@ -5,15 +5,18 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import type { Request } from 'express';
-import { AuthService } from '../auth.service.js';
+import { CredentialService } from '../credential.service.js';
 
 export interface AuthenticatedRequest extends Request {
-  user?: any;
+  user?: {
+    email: string;
+    id: string;
+  };
 }
 
 @Injectable()
 export class AuthGuard implements CanActivate {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private readonly credentialService: CredentialService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
@@ -24,7 +27,7 @@ export class AuthGuard implements CanActivate {
     }
 
     try {
-      const payload = await this.authService.verifyAccessToken(token);
+      const payload = await this.credentialService.verifyAccessToken(token);
       request.user = payload;
       return true;
     } catch {
@@ -45,4 +48,3 @@ export class AuthGuard implements CanActivate {
     return undefined;
   }
 }
-
