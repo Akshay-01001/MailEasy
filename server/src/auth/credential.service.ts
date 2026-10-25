@@ -10,6 +10,11 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { RegisterUserDto } from './dto/register-user-dto.js';
 import { LoginUserDto } from './dto/login-user-dto.js';
 import { JwtService } from '@nestjs/jwt';
+import type {
+  AuthTokens,
+  JwtAccessPayload,
+  JwtRefreshPayload,
+} from './types/auth.types.js';
 
 @Injectable()
 export class CredentialService {
@@ -79,8 +84,11 @@ export class CredentialService {
    * Generates a new access token (1h) and refresh token (7d).
    * Hashes the refresh token and stores it in the database.
    */
-  async generateTokens(user: { id: string; email: string }) {
-    const payload = {
+  async generateTokens(user: {
+    id: string;
+    email: string;
+  }): Promise<AuthTokens> {
+    const payload: JwtAccessPayload = {
       sub: user.id,
       email: user.email,
     };
@@ -90,17 +98,16 @@ export class CredentialService {
       expiresIn: '1h',
     });
 
-    const refreshToken = await this.jwtService.signAsync(
-      {
-        sub: user.id,
-        tokenType: 'refresh',
-        jti: crypto.randomUUID(),
-      },
-      {
-        secret: process.env.JWT_REFRESH_SECRET,
-        expiresIn: '7d',
-      },
-    );
+    const refreshPayload: Omit<JwtRefreshPayload, 'iat' | 'exp'> = {
+      sub: user.id,
+      tokenType: 'refresh',
+      jti: crypto.randomUUID(),
+    };
+
+    const refreshToken = await this.jwtService.signAsync(refreshPayload, {
+      secret: process.env.JWT_REFRESH_SECRET,
+      expiresIn: '7d',
+    });
 
     const tokenHash = this.hashToken(refreshToken);
     const expiresAt = new Date(
@@ -126,12 +133,12 @@ export class CredentialService {
    * 3. If missing -> detects reuse / breach -> revokes all user sessions.
    * 4. If found -> deletes old token from DB and issues a brand-new token pair.
    */
-  async refreshToken(oldToken: string) {
+  async refreshToken(oldToken: string): Promise<AuthTokens> {
     if (!oldToken) {
       throw new UnauthorizedException('Refresh token missing');
     }
 
-    let payload: { sub: string; tokenType?: string };
+    let payload: JwtRefreshPayload;
     try {
       payload = await this.verifyRefreshToken(oldToken);
     } catch {
@@ -183,7 +190,7 @@ export class CredentialService {
   /**
    * Revoke a single refresh token from DB (on logout)
    */
-  async revokeToken(token: string) {
+  async revokeToken(token: string): Promise<void> {
     if (!token) return;
     const tokenHash = this.hashToken(token);
     await this.prisma.db.orm.public.RefreshToken.where({
@@ -194,7 +201,7 @@ export class CredentialService {
   /**
    * Revoke all refresh tokens for a user (logout from all devices)
    */
-  async revokeAllUserTokens(userId: string) {
+  async revokeAllUserTokens(userId: string): Promise<void> {
     await this.prisma.db.orm.public.RefreshToken.where({
       userId,
     }).deleteAll();
@@ -213,16 +220,15 @@ export class CredentialService {
     return userWithoutPassword;
   }
 
-  async verifyAccessToken(token: string) {
-    return await this.jwtService.verifyAsync(token, {
+  async verifyAccessToken(token: string): Promise<JwtAccessPayload> {
+    return await this.jwtService.verifyAsync<JwtAccessPayload>(token, {
       secret: process.env.JWT_ACCESS_SECRET,
     });
   }
 
-  async verifyRefreshToken(token: string) {
-    return await this.jwtService.verifyAsync(token, {
+  async verifyRefreshToken(token: string): Promise<JwtRefreshPayload> {
+    return await this.jwtService.verifyAsync<JwtRefreshPayload>(token, {
       secret: process.env.JWT_REFRESH_SECRET,
     });
   }
 }
-

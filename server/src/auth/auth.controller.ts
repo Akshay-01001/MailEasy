@@ -5,6 +5,7 @@ import {
   HttpCode,
   HttpStatus,
   Post,
+  Query,
   Req,
   Res,
   UnauthorizedException,
@@ -52,6 +53,32 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const user = await this.credentialService.credentialLogin(loginUserDto);
+    const { accessToken, refreshToken } =
+      await this.credentialService.generateTokens({
+        email: user.email,
+        id: user.id,
+      });
+
+    this.setAuthCookies(res, accessToken, refreshToken);
+
+    return {
+      user,
+      message: 'Login Successful !!',
+    };
+  }
+
+  @Get('google')
+  googleAuth(@Res() res: Response) {
+    const url = this.googleAuthService.getGoogleAuthUrl();
+    return res.redirect(url);
+  }
+
+  @Get('google/callback')
+  async googleCallback(
+    @Query('code') code: string,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const user = await this.googleAuthService.handleGoogleCallback(code);
     const { accessToken, refreshToken } =
       await this.credentialService.generateTokens({
         email: user.email,

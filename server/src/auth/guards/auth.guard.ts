@@ -6,13 +6,9 @@ import {
 } from '@nestjs/common';
 import type { Request } from 'express';
 import { CredentialService } from '../credential.service.js';
+import type { AuthenticatedRequest } from '../types/auth.types.js';
 
-export interface AuthenticatedRequest extends Request {
-  user?: {
-    email: string;
-    id: string;
-  };
-}
+export type { AuthenticatedRequest };
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -37,7 +33,7 @@ export class AuthGuard implements CanActivate {
 
   private extractTokenFromRequest(request: Request): string | undefined {
     if (request.cookies?.access_token) {
-      return request.cookies.access_token;
+      return request.cookies.access_token as string;
     }
 
     const [type, token] = request.headers.authorization?.split(' ') ?? [];

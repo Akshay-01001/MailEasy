@@ -1,0 +1,21 @@
+{
+  "name": "maileasy",
+  "private": true,
+  "scripts": {
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^17.6.0"
+  },
+  "lint-staged": {
+    "server/**/*.{ts,js}": [
+      "npx --prefix server prettier --write",
+      "npx --prefix server oxlint"
+    ],
+    "client/**/*.{ts,tsx,js,jsx}": [
+      "npx --prefix client prettier --write",
+      "npx --prefix client oxlint"
+    ]
+  }
+}
