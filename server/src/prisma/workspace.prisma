@@ -1,0 +1,94 @@
+// use prisma-8
+native_enum WorkspaceType {
+  ORGANIZATION = "ORGANIZATION"
+  INDIVIDUAL = "INDIVIDUAL"
+
+  @@map("workspace_type")
+}
+
+native_enum WorkspaceRole {
+  OWNER = "OWNER"
+  ADMIN = "ADMIN"
+  MEMBER = "MEMBER"
+
+  @@map("workspace_role")
+}
+
+native_enum WorkspaceMemberStatus {
+  ACTIVE = "ACTIVE"
+  SUSPENDED = "SUSPENDED"
+
+  @@map("workspace_member_status")
+}
+
+model Workspace {
+  id              Uuid                     @id(map: "workspaces_pkey") @default(sql`gen_random_uuid()`)
+  name            VarChar(100)
+  type            pg.enum(WorkspaceType)   @default(sql`'ORGANIZATION'::workspace_type`)
+  createdByUserId Uuid                     @map("created_by_user_id")
+  createdAt       TimestamptzString        @default(now()) @map("created_at")
+  updatedAt       TimestamptzString        @default(now()) @map("updated_at")
+
+  createdBy       User                     @relation("WorkspaceCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  organization    Organization?
+  members         WorkspaceMember[]
+  senderSettings  WorkspaceSenderSettings?
+
+  @@map("workspaces")
+}
+
+model Organization {
+  id           Uuid              @id(map: "organizations_pkey") @default(sql`gen_random_uuid()`)
+  workspaceId  Uuid              @unique(map: "organizations_workspace_id_unique") @map("workspace_id")
+
+  companyName  VarChar(200)      @map("company_name")
+  website      VarChar(255)?
+  addressLine1 VarChar(255)      @map("address_line_1")
+  addressLine2 VarChar(255)?     @map("address_line_2")
+  city         VarChar(100)
+  state        VarChar(100)
+  postalCode   VarChar(20)       @map("postal_code")
+  countryCode  VarChar(2)        @map("country_code")
+
+  createdAt    TimestamptzString @default(now()) @map("created_at")
+  updatedAt    TimestamptzString @default(now()) @map("updated_at")
+
+  workspace    Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@map("organizations")
+}
+
+model WorkspaceMember {
+  id          Uuid                           @id(map: "workspace_members_pkey") @default(sql`gen_random_uuid()`)
+  workspaceId Uuid                           @map("workspace_id")
+  userId      Uuid                           @map("user_id")
+  role        pg.enum(WorkspaceRole)         @default(sql`'MEMBER'::workspace_role`)
+  status      pg.enum(WorkspaceMemberStatus) @default(sql`'ACTIVE'::workspace_member_status`)
+
+  joinedAt    TimestamptzString              @default(now()) @map("joined_at")
+  createdAt   TimestamptzString              @default(now()) @map("created_at")
+  updatedAt   TimestamptzString              @default(now()) @map("updated_at")
+
+  workspace   Workspace                      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user        User                           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId], map: "workspace_members_workspace_id_user_id_unique")
+  @@map("workspace_members")
+}
+
+model WorkspaceSenderSettings {
+  id                    Uuid               @id(map: "workspace_sender_settings_pkey") @default(sql`gen_random_uuid()`)
+  workspaceId           Uuid               @unique(map: "workspace_sender_settings_workspace_id_unique") @map("workspace_id")
+
+  senderName            VarChar(100)       @map("sender_name")
+  sendingEmail          VarChar(255)       @map("sending_email")
+  supportEmail          VarChar(255)?      @map("support_email")
+  senderEmailVerifiedAt TimestamptzString? @map("sender_email_verified_at")
+
+  createdAt             TimestamptzString  @default(now()) @map("created_at")
+  updatedAt             TimestamptzString  @default(now()) @map("updated_at")
+
+  workspace             Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@map("workspace_sender_settings")
+}

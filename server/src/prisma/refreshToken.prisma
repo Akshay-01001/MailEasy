@@ -1,5 +1,4 @@
 // use prisma-8
-
 model RefreshToken {
   id        Uuid              @id(map: "refresh_tokens_pkey") @default(sql`gen_random_uuid()`)
   tokenHash VarChar(255)      @unique(map: "refresh_tokens_token_hash_unique") @map("token_hash")

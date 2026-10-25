@@ -6,27 +6,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
-
-interface GoogleTokenResponse {
-  access_token: string;
-  expires_in: number;
-  refresh_token?: string;
-  scope: string;
-  token_type: string;
-  id_token?: string;
-  error?: string;
-  error_description?: string;
-}
-
-interface GoogleUserInfo {
-  sub: string;
-  name: string;
-  given_name?: string;
-  family_name?: string;
-  picture?: string;
-  email: string;
-  email_verified: boolean;
-}
+import { GoogleTokenResponse, GoogleUserInfo } from './types/auth.types.js';
 
 @Injectable()
 export class GoogleAuthService {
@@ -42,9 +22,7 @@ export class GoogleAuthService {
       'http://localhost:8000/auth/google/callback';
 
     if (!clientId) {
-      throw new InternalServerErrorException(
-        'GOOGLE_CLIENT_ID is not configured in .env',
-      );
+      throw new InternalServerErrorException('Something Went Wrong');
     }
 
     const rootUrl = 'https://accounts.google.com/o/oauth2/v2/auth';
